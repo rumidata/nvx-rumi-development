@@ -1,0 +1,158 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <name>Rumi Development Parent</name>
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>nvx-rumi-development-parent</artifactId>
+    <packaging>pom</packaging>
+    <version>1.0-SNAPSHOT</version>
+
+    <parent>
+        <groupId>com.neeve</groupId>
+        <artifactId>nvx-os-parent</artifactId>
+        <version>1.1.5</version>
+    </parent>
+
+    <organization>
+        <name>N5 Technologies, Inc</name>
+        <url>http://www.n5corp.com</url>
+    </organization>
+
+    <licenses>
+        <license>
+            <name>Apache 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+            <comments>A business-friendly OSS license</comments>
+        </license>
+    </licenses>
+
+    <scm>
+        <url>https://github.com/rumidata/nvx-rumi-appbuilder</url>
+        <connection>scm:git:git://github.com/rumidata/nvx-rumi-appbuilder.git</connection>
+    </scm>
+
+    <modules>
+        <module>nvx-rumi-appbuilder</module>
+    </modules>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.8.1</version>
+                    <configuration>
+                        <release>11</release>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>2.10</version>
+                    <configuration>
+                        <forkMode>always</forkMode>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-report-plugin</artifactId>
+                    <version>2.16</version>
+                    <configuration>
+                        <aggregate>true</aggregate>
+                        <showSuccess>true</showSuccess>
+                    </configuration>
+                </plugin>
+
+                <!-- copyright checking -->
+                <plugin>
+                    <inherited>false</inherited>
+                    <groupId>com.mycila</groupId>
+                    <artifactId>license-maven-plugin</artifactId>
+                    <configuration>
+                        <strictCheck>true</strictCheck>
+                        <excludes>
+                            <exclude>LICENSE.txt</exclude>
+                            <exclude>thirdparty/**</exclude>
+                            <exclude>**/target/**</exclude>
+                            <exclude>**/archetype-resources/**</exclude>
+                            <exclude>**/templates/**</exclude>
+                        </excludes>
+                        <includes>
+                            <include>**/src/**/*.java</include>
+                            <include>**/src/**/*.xsd</include>
+                            <include>**/src/**/*.h</include>
+                            <include>**/src/**/*.c</include>
+                            <include>**/test/**/*.java</include>
+                            <include>**/bin/*.bat</include>
+                            <include>**/bin/*.sh</include>
+                        </includes>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <plugins>
+            <!-- copyright checking -->
+            <plugin>
+                <inherited>false</inherited>
+                <groupId>com.mycila</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <executions>
+                    <!-- format license headers -->
+                    <execution>
+                        <id>format-headers</id>
+                        <phase>process-sources</phase>
+                        <goals>
+                            <goal>format</goal>
+                        </goals>
+                        <configuration>
+                            <strictCheck>true</strictCheck>
+                            <excludes>
+                                <exclude>**/templates/**</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                    <!-- check license headers -->
+                    <execution>
+                        <id>check-headers</id>
+                        <phase>process-sources</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Tests -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <goals>
+                    <goal>test</goal>
+                </goals>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-report-plugin</artifactId>
+                <goals>
+                    <goal>report-only</goal>
+                </goals>
+            </plugin>
+        </plugins>
+    </build>
+
+    <repositories>
+        <repository>
+            <id>rumi-public</id>
+            <url>http://nexus.rumidata.io:8081/repository/maven-public/</url>
+            <name>Rumi Repository</name>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+        </repository>
+    </repositories>
+</project>

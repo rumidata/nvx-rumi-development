@@ -1,0 +1,5 @@
+##DISPLAYNAME Shutdown Full
+##DESCRIPTION Shuts Down the Full System
+
+assume launch has run
+
