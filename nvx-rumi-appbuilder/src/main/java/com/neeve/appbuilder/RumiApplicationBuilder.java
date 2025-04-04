@@ -28,13 +28,38 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class RumiApplicationBuilder {
-    public void createApplication(RumiAppParams params, Path targetDir) throws IOException {
+    public enum BuildTool {
+        MAVEN("maven"),
+        GRADLE("gradle");
+
+        private final String name;
+
+        BuildTool(String name) {
+            this.name = name;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public static BuildTool fromString(String value) {
+            for (BuildTool tool: BuildTool.values()) {
+                if (tool.name.equalsIgnoreCase(value)) {
+                    return tool;
+                }
+            }
+            throw new IllegalArgumentException("Unsupported build tool: " + value);
+        }
+    }
+
+    final public void createApplication(RumiAppParams params, Path targetDir, BuildTool buildTool) throws IOException {
         Path templateDir;
         try {
-            templateDir = Paths.get(Objects.requireNonNull(getClass().getClassLoader().getResource("templates/app")).toURI());
+            String templatePath = String.format("templates/%s/app", buildTool.getName());
+            templateDir = Paths.get(Objects.requireNonNull(getClass().getClassLoader().getResource(templatePath)).toURI());
         }
         catch (URISyntaxException | NullPointerException e) {
-            throw new IOException("Template directory not found in resources", e);
+            throw new IOException("Template directory for build tool '" + buildTool + "' not found in resources", e);
         }
         TemplateProcessor.applyTemplate(templateDir, targetDir, params.toTokenMap());
     }

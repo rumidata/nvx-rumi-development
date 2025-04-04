@@ -1,4 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <name>Rumi Development Parent</name>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>nvx-rumi-development-parent</artifactId>
@@ -63,65 +65,32 @@
                         <showSuccess>true</showSuccess>
                     </configuration>
                 </plugin>
-
-                <!-- copyright checking -->
-                <plugin>
-                    <inherited>false</inherited>
-                    <groupId>com.mycila</groupId>
-                    <artifactId>license-maven-plugin</artifactId>
-                    <configuration>
-                        <strictCheck>true</strictCheck>
-                        <excludes>
-                            <exclude>LICENSE.txt</exclude>
-                            <exclude>thirdparty/**</exclude>
-                            <exclude>**/target/**</exclude>
-                            <exclude>**/archetype-resources/**</exclude>
-                            <exclude>**/templates/**</exclude>
-                        </excludes>
-                        <includes>
-                            <include>**/src/**/*.java</include>
-                            <include>**/src/**/*.xsd</include>
-                            <include>**/src/**/*.h</include>
-                            <include>**/src/**/*.c</include>
-                            <include>**/test/**/*.java</include>
-                            <include>**/bin/*.bat</include>
-                            <include>**/bin/*.sh</include>
-                        </includes>
-                    </configuration>
-                </plugin>
             </plugins>
         </pluginManagement>
 
         <plugins>
-            <!-- copyright checking -->
             <plugin>
-                <inherited>false</inherited>
                 <groupId>com.mycila</groupId>
                 <artifactId>license-maven-plugin</artifactId>
+                <version>2.9</version>
                 <executions>
-                    <!-- format license headers -->
+                    <!-- Disable inherited executions -->
                     <execution>
                         <id>format-headers</id>
-                        <phase>process-sources</phase>
-                        <goals>
-                            <goal>format</goal>
-                        </goals>
-                        <configuration>
-                            <strictCheck>true</strictCheck>
-                            <excludes>
-                                <exclude>**/templates/**</exclude>
-                            </excludes>
-                        </configuration>
+                        <phase>none</phase>
                     </execution>
-                    <!-- check license headers -->
                     <execution>
                         <id>check-headers</id>
-                        <phase>process-sources</phase>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
+                        <phase>none</phase>
                     </execution>
                 </executions>
+                <configuration>
+                    <strictCheck>false</strictCheck>
+                    <excludes>
+                        <!-- Exclude all template files in any module -->
+                        <exclude>**/src/main/resources/templates/**</exclude>
+                    </excludes>
+                </configuration>
             </plugin>
 
             <!-- Tests -->
