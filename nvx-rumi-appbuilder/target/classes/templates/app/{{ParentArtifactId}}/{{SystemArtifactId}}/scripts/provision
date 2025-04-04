@@ -1,6 +1,0 @@
-##DISPLAYNAME Provision Full
-##DESCRIPTION Provisions the Full System
-
-provision all xvms
-deploy to all xvms fully provided
-configure all xvms

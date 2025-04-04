@@ -1,6 +1,0 @@
-##DISPLAYNAME Upgrade Full
-##DESCRIPTION Upgrades the Full System
-
-assume provision has run
-deploy to all xvms fully provided
-configure all xvms
