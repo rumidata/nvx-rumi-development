@@ -31,7 +31,8 @@
                             <goal>adm-generate</goal>
                         </goals>
                         <configuration>
-                            <modelFile>${project.basedir}/src/main/models/{{PackagePath}}/roe/messages.xml</modelFile>
+                            <modelFile>${project.basedir}/src/main/models/{{PackagePath}}/messages/messages.xml</modelFile>
+                            <encodingType>{{EncodingType}}</encodingType>
                         </configuration>
                     </execution>
                 </executions>

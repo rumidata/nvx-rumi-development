@@ -35,12 +35,7 @@
             <artifactId>nvx-rumi</artifactId>
             <version>${nvx.rumi.version}</version>
         </dependency>
-
-        <dependency>
-            <groupId>com.neeve</groupId>
-            <artifactId>nvx-rumi-solace</artifactId>
-        </dependency>
-
+{{MessagingProviderDependency}}
         <dependency>
             <groupId>com.neeve</groupId>
             <artifactId>nvx-rumi-jms</artifactId>

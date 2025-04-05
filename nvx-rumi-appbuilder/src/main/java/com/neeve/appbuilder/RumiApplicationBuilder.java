@@ -90,6 +90,55 @@ public class RumiApplicationBuilder {
         }
     }
 
+    public enum EncodingType {
+        QUARK("quark"),
+        PROTOBUF("protobuf");
+
+        private final String name;
+
+        EncodingType(String name) {
+            this.name = name;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public static EncodingType fromString(String value) {
+            for (EncodingType tool: EncodingType.values()) {
+                if (tool.name.equalsIgnoreCase(value)) {
+                    return tool;
+                }
+            }
+            throw new IllegalArgumentException("Unsupported encoding type: " + value);
+        }
+    }
+
+    public enum MessagingProvider {
+        SOLACE("solace"),
+        ACTIVEMQ("activemq"),
+        KAFKA("kafka");
+
+        private final String name;
+
+        MessagingProvider(String name) {
+            this.name = name;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public static MessagingProvider fromString(String value) {
+            for (MessagingProvider provider : MessagingProvider.values()) {
+                if (provider.name.equalsIgnoreCase(value)) {
+                    return provider;
+                }
+            }
+            throw new IllegalArgumentException("Unsupported messaging provider: " + value);
+        }
+    }
+
     public static class AppParams {
         private final String appName;
         private final String packageName;
@@ -98,7 +147,8 @@ public class RumiApplicationBuilder {
         private final String rumiVersion;
         private final String rumiBindingsVersion;
         private final String rumiMgmtVersion;
-
+        private final EncodingType encodingType;
+        private final MessagingProvider messagingProvider;
         private final String appTokenName;
 
         public AppParams(String appName,
@@ -107,7 +157,9 @@ public class RumiApplicationBuilder {
                          String artifactPrefix,
                          String rumiVersion,
                          String rumiBindingsVersion,
-                         String rumiMgmtVersion) {
+                         String rumiMgmtVersion,
+                         EncodingType encodingType,
+                         MessagingProvider messagingProvider) {
             if (rumiMgmtVersion == null) {
                 throw new IllegalArgumentException("Rumi management version cannot be null");
             }
@@ -129,6 +181,12 @@ public class RumiApplicationBuilder {
             if (appName == null) {
                 throw new IllegalArgumentException("app name cannot be null");
             }
+            if (encodingType == null) {
+                encodingType = EncodingType.QUARK;
+            }
+            if (messagingProvider == null) {
+                messagingProvider = MessagingProvider.ACTIVEMQ;
+            }
             this.appName = appName;
             this.packageName = packageName;
             this.groupId = groupId;
@@ -136,7 +194,44 @@ public class RumiApplicationBuilder {
             this.rumiVersion = rumiVersion;
             this.rumiBindingsVersion = rumiBindingsVersion;
             this.rumiMgmtVersion = rumiMgmtVersion;
+            this.encodingType = encodingType;
+            this.messagingProvider = messagingProvider;
             this.appTokenName = appName.toLowerCase().replaceAll("\\s+", "");
+        }
+
+        private String getConnectionStringForProvider(MessagingProvider provider) {
+            switch (provider) {
+                case SOLACE:
+                    return "solace://solace.rumi.local:55555";
+                case ACTIVEMQ:
+                    return "activemq://activemq.rumi.local:61616?wireFormat.maxInactivityDuration=0";
+                case KAFKA:
+                    return "kafka://kafka.rumi.local:9092";
+                default:
+                    throw new IllegalStateException("Unhandled messaging provider: " + provider);
+            }
+        }
+
+        private String getMessagingDependencySnippet(MessagingProvider provider) {
+            String indent = "        "; // 8 spaces to match existing <dependency> blocks
+            switch (provider) {
+                case SOLACE:
+                    return indent + "\n" +
+                           indent + "<dependency>\n" +
+                           indent + "    <groupId>com.neeve</groupId>\n" +
+                           indent + "    <artifactId>nvx-rumi-solace</artifactId>\n" +
+                           indent + "</dependency>\n";
+                case KAFKA:
+                    return indent + "\n" +
+                           indent + "<dependency>\n" +
+                           indent + "    <groupId>com.neeve</groupId>\n" +
+                           indent + "    <artifactId>nvx-rumi-kafka</artifactId>\n" +
+                           indent + "</dependency>\n";
+                case ACTIVEMQ:
+                    return ""; // nothing needed
+                default:
+                    throw new IllegalStateException("Unhandled messaging provider: " + provider);
+            }
         }
 
         public Map<String, String> toTokenMap() {
@@ -154,6 +249,9 @@ public class RumiApplicationBuilder {
             map.put("{{RumiVersion}}", rumiVersion);
             map.put("{{RumiBindingsVersion}}", rumiBindingsVersion);
             map.put("{{RumiMgmtVersion}}", rumiMgmtVersion);
+            map.put("{{EncodingType}}", encodingType.getName());
+            map.put("{{MessagingConnectionString}}", getConnectionStringForProvider(messagingProvider));
+            map.put("{{MessagingProviderDependency}}", getMessagingDependencySnippet(messagingProvider));
             return map;
         }
     }
