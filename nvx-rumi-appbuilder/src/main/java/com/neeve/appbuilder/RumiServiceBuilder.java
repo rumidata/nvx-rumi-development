@@ -83,29 +83,29 @@ public class RumiServiceBuilder {
     }
 
     public static class ServiceParams {
+        private final RumiApplicationBuilder.AppParams appParams;
         private final String serviceName;
         private final ServiceType serviceType;
         private final ServiceHAModel serviceHAModel;
-        private final RumiApplicationBuilder.AppParams appParams;
         private final Map<String, String> tokenMap;
 
-        public ServiceParams(String serviceName,
+        public ServiceParams(String appRoot,
+                             String serviceName,
                              ServiceType serviceType,
-                             ServiceHAModel serviceHAModel,
-                             RumiApplicationBuilder.AppParams appParams) {
+                             ServiceHAModel serviceHAModel) throws IOException {
+            if (appRoot == null || appRoot.isEmpty()) {
+                throw new IllegalArgumentException("App root cannot be null or empty");
+            }
             if (serviceName == null || serviceName.isEmpty()) {
                 throw new IllegalArgumentException("Service name cannot be null or empty");
             }
-            if (appParams == null) {
-                throw new IllegalArgumentException("AppParams cannot be null");
-            }
+            this.appParams = RumiApplicationBuilder.AppParams.read(Paths.get(appRoot));
             this.serviceName = serviceName;
             this.serviceType = serviceType != null ? serviceType : ServiceType.PROCESSOR;
             this.serviceHAModel = serviceHAModel;
             if (this.serviceType == ServiceType.PROCESSOR && this.serviceHAModel == null) {
                 throw new IllegalArgumentException("service HA model must be specified for the '" + this.serviceType.getName() + "' service type.");
             }
-            this.appParams = appParams;
             this.tokenMap = toTokenMap();
         }
 
@@ -180,6 +180,25 @@ public class RumiServiceBuilder {
         }
     }
 
+    private Path extractTemplateDirectory(String templatePath) throws IOException {
+        Path tempDir = Files.createTempDirectory("rumi-service-template-");
+        try (ScanResult scanResult = new ClassGraph().acceptPaths(templatePath).scan()) {
+            var resources = scanResult.getAllResources();
+            if (resources.isEmpty()) {
+                throw new InternalError("Template path not found or is empty: " + templatePath);
+            }
+            for (Resource resource : resources) {
+                String relativePath = resource.getPath().substring(templatePath.length() + 1);
+                Path targetPath = tempDir.resolve(relativePath);
+                Files.createDirectories(targetPath.getParent());
+                try (InputStream in = resource.open()) {
+                    Files.copy(in, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
+        }
+        return tempDir;
+    }
+
     public void createService(ServiceParams params) throws IOException {
         // validate
         if (params == null) {
@@ -210,25 +229,6 @@ public class RumiServiceBuilder {
 
         // update the parent pom
         updateParentPom(appRoot, params);
-    }
-
-    private Path extractTemplateDirectory(String templatePath) throws IOException {
-        Path tempDir = Files.createTempDirectory("rumi-service-template-");
-        try (ScanResult scanResult = new ClassGraph().acceptPaths(templatePath).scan()) {
-            var resources = scanResult.getAllResources();
-            if (resources.isEmpty()) {
-                throw new InternalError("Template path not found or is empty: " + templatePath);
-            }
-            for (Resource resource : resources) {
-                String relativePath = resource.getPath().substring(templatePath.length() + 1);
-                Path targetPath = tempDir.resolve(relativePath);
-                Files.createDirectories(targetPath.getParent());
-                try (InputStream in = resource.open()) {
-                    Files.copy(in, targetPath, StandardCopyOption.REPLACE_EXISTING);
-                }
-            }
-        }
-        return tempDir;
     }
 }
 

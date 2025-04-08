@@ -21,12 +21,16 @@
  */
 package com.neeve.appbuilder;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.InputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.*;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import com.google.gson.Gson;
 
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.Resource;
@@ -120,6 +124,9 @@ public class RumiApplicationBuilder {
         private final BuildTool buildTool;
         private final String appTokenName;
         private final Map<String, String> tokenMap;
+
+        private static final String CONFIG_FILE_NAME = ".rumi";
+        private static final Gson gson = new Gson();
 
         public AppParams(String appName,
                          String appDir,
@@ -233,6 +240,23 @@ public class RumiApplicationBuilder {
             return map;
         }
 
+        private static void write(Path appRoot, AppParams params) throws IOException {
+            Path configFile = appRoot.resolve(CONFIG_FILE_NAME);
+            try (BufferedWriter writer = Files.newBufferedWriter(configFile)) {
+                gson.toJson(params, writer);
+            }
+        }
+
+        static AppParams read(Path appRoot) throws IOException {
+            Path configFile = appRoot.resolve(CONFIG_FILE_NAME);
+            if (!Files.exists(configFile)) {
+                throw new IllegalArgumentException(appRoot.toAbsolutePath().normalize() + " is not a valid Rumi application root");
+            }
+            try (BufferedReader reader = Files.newBufferedReader(configFile)) {
+                return gson.fromJson(reader, RumiApplicationBuilder.AppParams.class);
+            }
+        }
+
         public String getAppName() {
             return appName;
         }
@@ -338,6 +362,6 @@ public class RumiApplicationBuilder {
             throw new IOException("Failed to extract template for build tool: " + buildTool, e);
         }
         TemplateProcessor.applyTemplate(templateDir, appDir, params.getTokenMap());
-        RumiConfigManager.writeAppParams(appRoot, params);
+        AppParams.write(appRoot, params);
     }
 }
