@@ -31,8 +31,8 @@
                             <goal>adm-generate</goal>
                         </goals>
                         <configuration>
-                            <modelFile>${project.basedir}/src/main/models/{{PackagePath}}/messages/messages.xml</modelFile>
-                            <encodingType>{{EncodingType}}</encodingType>
+                            <modelFile>${project.basedir}/src/main/models/{{AppPackagePath}}/roe/messages.xml</modelFile>
+                            <encodingType>${nvx.rumi.encoding}</encodingType>
                         </configuration>
                     </execution>
                 </executions>

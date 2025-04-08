@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<model xmlns="http://www.neeveresearch.com/schema/x-adml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" namespace="{{AppPackageName}}.{{ServicePackageName}}.state" defaultFactoryId="10">
+    <import model="{{AppPackagePath}}/roe/messages.xml"/>
+
+    <factories>
+        <factory name="StateFactory" id="10"/>
+    </factories>
+    
+    <entities>
+        <entity name="Repository" id="1">
+        </entity>
+    </entities>
+
+    <collections>
+    </collections>
+</model>

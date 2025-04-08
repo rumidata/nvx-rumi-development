@@ -10,6 +10,7 @@
         <nvx.rumi.version>{{RumiVersion}}</nvx.rumi.version>
         <nvx.rumi.bindings.version>{{RumiBindingsVersion}}</nvx.rumi.bindings.version>
         <nvx.rumi.management.version>{{RumiMgmtVersion}}</nvx.rumi.management.version>
+        <nvx.rumi.encoding>{{EncodingType}}</nvx.rumi.encoding>
     </properties>
 
     <modules>

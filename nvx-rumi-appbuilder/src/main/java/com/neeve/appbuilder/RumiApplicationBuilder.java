@@ -32,39 +32,6 @@ import io.github.classgraph.ClassGraph;
 import io.github.classgraph.Resource;
 import io.github.classgraph.ScanResult;
 
-class TemplateProcessor {
-    public static void applyTemplate(Path templateDir, Path targetDir, Map<String, String> tokens) throws IOException {
-        Files.walk(templateDir).forEach(source -> {
-            try {
-                Path relative = templateDir.relativize(source);
-                String replacedPath = applyTokens(relative.toString(), tokens);
-                Path target = targetDir.resolve(replacedPath);
-
-                if (Files.isDirectory(source)) {
-                    Files.createDirectories(target);
-                }
-                else {
-                    String content = Files.readString(source);
-                    String replacedContent = applyTokens(content, tokens);
-                    Files.createDirectories(target.getParent());
-                    Files.writeString(target, replacedContent);
-                }
-            }
-            catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
-    }
-
-    private static String applyTokens(String input, Map<String, String> tokens) {
-        String result = input;
-        for (Map.Entry<String, String> entry: tokens.entrySet()) {
-            result = result.replace(entry.getKey(), entry.getValue());
-        }
-        return result;
-    }
-}
-
 public class RumiApplicationBuilder {
     public enum BuildTool {
         MAVEN("maven"),
@@ -141,6 +108,7 @@ public class RumiApplicationBuilder {
 
     public static class AppParams {
         private final String appName;
+        private final String appDir;
         private final String packageName;
         private final String groupId;
         private final String artifactPrefix;
@@ -149,9 +117,12 @@ public class RumiApplicationBuilder {
         private final String rumiMgmtVersion;
         private final EncodingType encodingType;
         private final MessagingProvider messagingProvider;
+        private final BuildTool buildTool;
         private final String appTokenName;
+        private final Map<String, String> tokenMap;
 
         public AppParams(String appName,
+                         String appDir,
                          String packageName,
                          String groupId,
                          String artifactPrefix,
@@ -159,44 +130,48 @@ public class RumiApplicationBuilder {
                          String rumiBindingsVersion,
                          String rumiMgmtVersion,
                          EncodingType encodingType,
-                         MessagingProvider messagingProvider) {
-            if (rumiMgmtVersion == null) {
-                throw new IllegalArgumentException("Rumi management version cannot be null");
+                         MessagingProvider messagingProvider,
+                         BuildTool buildTool) {
+            if (appName == null) {
+                throw new IllegalArgumentException("app name cannot be null");
             }
-            if (rumiBindingsVersion == null) {
-                throw new IllegalArgumentException("Rumi bindings version cannot be null");
+            if (appDir == null) {
+                throw new IllegalArgumentException("app dir cannot be null");
             }
-            if (rumiVersion == null) {
-                throw new IllegalArgumentException("Rumi runtime version cannot be null");
-            }
-            if (artifactPrefix == null) {
-                throw new IllegalArgumentException("artifact prefix  cannot be null");
-            }
-            if (groupId == null) {
-                throw new IllegalArgumentException("group id cannot be null");
+            if (Files.notExists(Paths.get(appDir).toAbsolutePath())) {
+                throw new IllegalArgumentException("app dir '" + appDir + "' does not exist");
             }
             if (packageName == null) {
                 throw new IllegalArgumentException("package name cannot be null");
             }
-            if (appName == null) {
-                throw new IllegalArgumentException("app name cannot be null");
+            if (groupId == null) {
+                throw new IllegalArgumentException("group id cannot be null");
             }
-            if (encodingType == null) {
-                encodingType = EncodingType.QUARK;
+            if (artifactPrefix == null) {
+                throw new IllegalArgumentException("artifact prefix  cannot be null");
             }
-            if (messagingProvider == null) {
-                messagingProvider = MessagingProvider.ACTIVEMQ;
+            if (rumiVersion == null) {
+                throw new IllegalArgumentException("Rumi runtime version cannot be null");
+            }
+            if (rumiBindingsVersion == null) {
+                throw new IllegalArgumentException("Rumi bindings version cannot be null");
+            }
+            if (rumiMgmtVersion == null) {
+                throw new IllegalArgumentException("Rumi management version cannot be null");
             }
             this.appName = appName;
+            this.appDir = appDir;
             this.packageName = packageName;
             this.groupId = groupId;
             this.artifactPrefix = artifactPrefix;
             this.rumiVersion = rumiVersion;
             this.rumiBindingsVersion = rumiBindingsVersion;
             this.rumiMgmtVersion = rumiMgmtVersion;
-            this.encodingType = encodingType;
-            this.messagingProvider = messagingProvider;
+            this.encodingType = encodingType != null ? encodingType : EncodingType.QUARK;
+            this.messagingProvider = messagingProvider != null ? messagingProvider : MessagingProvider.ACTIVEMQ;
+            this.buildTool = buildTool != null ? buildTool : BuildTool.MAVEN;
             this.appTokenName = appName.toLowerCase().replaceAll("\\s+", "");
+            this.tokenMap = toTokenMap();
         }
 
         private String getConnectionStringForProvider(MessagingProvider provider) {
@@ -234,32 +209,95 @@ public class RumiApplicationBuilder {
             }
         }
 
-        public Map<String, String> toTokenMap() {
+        private Map<String, String> toTokenMap() {
             Map<String, String> map = new HashMap<>();
-            map.put("{{AppDisplayName}}", appName);
-            map.put("{{appTokenName}}", appTokenName);
-            map.put("{{PackageName}}", packageName);
-            map.put("{{PackagePath}}", packageName.replace('.', '/'));
-            map.put("{{GroupId}}", groupId);
-            map.put("{{ArtifactPrefix}}", artifactPrefix);
-            map.put("{{ParentArtifactId}}", artifactPrefix + "-" + appTokenName);
-            map.put("{{RoeArtifactId}}", artifactPrefix + "-" + appTokenName + "-roe");
-            map.put("{{SystemArtifactId}}", artifactPrefix + "-" + appTokenName + "-system");
-            map.put("{{BusName}}", appTokenName);
-            map.put("{{RumiVersion}}", rumiVersion);
-            map.put("{{RumiBindingsVersion}}", rumiBindingsVersion);
-            map.put("{{RumiMgmtVersion}}", rumiMgmtVersion);
-            map.put("{{EncodingType}}", encodingType.getName());
-            map.put("{{MessagingConnectionString}}", getConnectionStringForProvider(messagingProvider));
-            map.put("{{MessagingProviderDependency}}", getMessagingDependencySnippet(messagingProvider));
+            map.put(TokenUtils.toToken("AppDisplayName"), TokenUtils.forDisplay(appName));
+            map.put(TokenUtils.toToken("AppDir"), appDir);
+            map.put(TokenUtils.toToken("AppTokenName"), appTokenName);
+            map.put(TokenUtils.toToken("AppPackageName"), packageName);
+            map.put(TokenUtils.toToken("AppPackagePath"), packageName.replace('.', '/'));
+            map.put(TokenUtils.toToken("GroupId"), groupId);
+            map.put(TokenUtils.toToken("ArtifactPrefix"), artifactPrefix);
+            map.put(TokenUtils.toToken("ParentArtifactId"), artifactPrefix + "-" + appTokenName);
+            map.put(TokenUtils.toToken("RoeArtifactId"), artifactPrefix + "-" + appTokenName + "-roe");
+            map.put(TokenUtils.toToken("SystemArtifactId"), artifactPrefix + "-" + appTokenName + "-system");
+            map.put(TokenUtils.toToken("BusName"), appTokenName);
+            map.put(TokenUtils.toToken("RumiVersion"), rumiVersion);
+            map.put(TokenUtils.toToken("RumiBindingsVersion"), rumiBindingsVersion);
+            map.put(TokenUtils.toToken("RumiMgmtVersion"), rumiMgmtVersion);
+            map.put(TokenUtils.toToken("EncodingType"), encodingType.getName());
+            map.put(TokenUtils.toToken("MessagingProvider"), messagingProvider.getName());
+            map.put(TokenUtils.toToken("MessagingConnectionString"), getConnectionStringForProvider(messagingProvider));
+            map.put(TokenUtils.toToken("MessagingProviderDependency"), getMessagingDependencySnippet(messagingProvider));
+            map.put(TokenUtils.toToken("BuildTool"), buildTool.getName());
             return map;
+        }
+
+        public String getAppName() {
+            return appName;
+        }
+
+        public String getAppDir() {
+            return appDir;
+        }
+
+        public String getAppRoot() {
+            return Paths.get(getAppDir()).resolve(getTokenMap().get(TokenUtils.toToken("ParentArtifactId"))).toAbsolutePath().normalize().toString();
+        }
+
+        public String getPackageName() {
+            return packageName;
+        }
+
+        public String getGroupId() {
+            return groupId;
+        }
+
+        public String getArtifactPrefix() {
+            return artifactPrefix;
+        }
+
+        public String getRumiVersion() {
+            return rumiVersion;
+        }
+
+        public String getRumiBindingsVersion() {
+            return rumiBindingsVersion;
+        }
+
+        public String getRumiMgmtVersion() {
+            return rumiMgmtVersion;
+        }
+
+        public EncodingType getEncodingType() {
+            return encodingType;
+        }
+
+        public MessagingProvider getMessagingProvider() {
+            return messagingProvider;
+        }
+
+        public String getAppTokenName() {
+            return appTokenName;
+        }
+
+        public BuildTool getBuildTool() {
+            return buildTool;
+        }
+
+        public Map<String, String> getTokenMap() {
+            return tokenMap;
         }
     }
 
-    final private Path extractTemplateDirectory(String templatePath) throws IOException {
+    private Path extractTemplateDirectory(String templatePath) throws IOException {
         Path tempDir = Files.createTempDirectory("rumi-template-");
         try (ScanResult scanResult = new ClassGraph().acceptPaths(templatePath).scan()) {
-            for (Resource resource: scanResult.getAllResources()) {
+            var resources = scanResult.getAllResources();
+            if (resources.isEmpty()) {
+                throw new InternalError("Template path not found or is empty: " + templatePath);
+            }
+            for (Resource resource : resources) {
                 String relativePath = resource.getPath().substring(templatePath.length() + 1);
                 Path targetPath = tempDir.resolve(relativePath);
                 Files.createDirectories(targetPath.getParent());
@@ -271,16 +309,26 @@ public class RumiApplicationBuilder {
         return tempDir;
     }
 
-    final public void createApplication(AppParams params, Path targetDir, BuildTool buildTool) throws IOException {
+    private void validateRumiAppDoesNotExist(Path appRoot) {
+        if (Files.exists(appRoot)) {
+            Path appConfig = appRoot.resolve(".rumi");
+            if (Files.exists(appConfig)) {
+                throw new IllegalArgumentException("A Rumi application already exists at: " + appRoot.toAbsolutePath().normalize());
+            } 
+            else {
+                throw new IllegalArgumentException("Directory '" + appRoot.toAbsolutePath().normalize() + "' already exists but is not a Rumi application");
+            }
+        }
+    }
+
+    final public void createApplication(AppParams params) throws IOException {
         if (params == null) {
             throw new IllegalArgumentException("params cannot be null");
         }
-        if (targetDir == null) {
-            targetDir = Paths.get("").toAbsolutePath();
-        }
-        if (buildTool == null) {
-            buildTool = BuildTool.MAVEN;
-        }
+        Path appDir = Paths.get(params.getAppDir()).toAbsolutePath();
+        Path appRoot = Paths.get(params.getAppRoot()).toAbsolutePath();
+        validateRumiAppDoesNotExist(appRoot);
+        BuildTool buildTool = params.getBuildTool();
         Path templateDir;
         try {
             String templatePath = String.format("templates/%s/app", buildTool.getName());
@@ -289,6 +337,7 @@ public class RumiApplicationBuilder {
         catch (IOException e) {
             throw new IOException("Failed to extract template for build tool: " + buildTool, e);
         }
-        TemplateProcessor.applyTemplate(templateDir, targetDir, params.toTokenMap());
+        TemplateProcessor.applyTemplate(templateDir, appDir, params.getTokenMap());
+        RumiConfigManager.writeAppParams(appRoot, params);
     }
 }

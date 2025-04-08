@@ -32,8 +32,8 @@
         </nv>
 
         <!-- Global {{AppDisplayName}} runtime configuration -->
-        <{{appTokenName}}>
-        </{{appTokenName}}>
+        <{{AppTokenName}}>
+        </{{AppTokenName}}>
     </env>
 
     <buses>
@@ -60,7 +60,7 @@
                 </properties>
             </activation>
             <env>
-                <ROOT_DIR>${{{appTokenName}}.rootdir::/home/rumi/{{appTokenName}}}</ROOT_DIR>
+                <ROOT_DIR>${{{AppTokenName}}.rootdir::/home/rumi/{{AppTokenName}}}</ROOT_DIR>
                 <SYSTEM_BUS_DESCRIPTOR>{{MessagingConnectionString}}</SYSTEM_BUS_DESCRIPTOR>
                 <TLOG_LOCATION>${ROOT_DIR}/tlog/${nv.ddl.targetxvm}</TLOG_LOCATION>
                 <nv>
@@ -68,8 +68,8 @@
                     <discovery.descriptor>activemq://discovery.rumi.local:61616?wireFormat.maxInactivityDuration=0</discovery.descriptor>
                 </nv>
 
-                <{{appTokenName}}>
-                </{{appTokenName}}>
+                <{{AppTokenName}}>
+                </{{AppTokenName}}>
             </env>
 
             <apps>
