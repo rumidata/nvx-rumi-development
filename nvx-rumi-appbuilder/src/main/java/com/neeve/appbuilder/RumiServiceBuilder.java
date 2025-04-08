@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.*;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class RumiServiceBuilder {
@@ -147,14 +148,51 @@ public class RumiServiceBuilder {
         }
     }
 
+    private void updateParentPom(Path appRoot, ServiceParams params) throws IOException {
+        Path pomPath = appRoot.resolve("pom.xml");
+        List<String> lines = Files.readAllLines(pomPath);
+        String serviceModuleLine = "        <module>" + params.getTokenMap().get(TokenUtils.toToken("ServiceArtifactId")) + "</module>";
+        String systemModuleLine = "<module>" + params.getTokenMap().get(TokenUtils.toToken("SystemArtifactId")) + "</module>";
+
+        // skip if it's already present
+        for (int i = 0; i < lines.size(); i++) {
+            if (lines.get(i).trim().equals(serviceModuleLine.trim())) {
+                return;
+            }
+        }
+
+        // find the line to insert before
+        int insertIndex = -1;
+        for (int i = 0; i < lines.size(); i++) {
+            if (lines.get(i).trim().equals(systemModuleLine.trim())) {
+                insertIndex = i;
+                break;
+            }
+        }
+
+        // insert
+        if (insertIndex != -1) {
+            lines.add(insertIndex, serviceModuleLine);
+            Files.write(pomPath, lines);
+        } 
+        else {
+            throw new IOException("Could not find system module in pom.xml");
+        }
+    }
+
     public void createService(ServiceParams params) throws IOException {
+        // validate
         if (params == null) {
             throw new IllegalArgumentException("params cannot be null");
         }
+
+        // get params
         RumiApplicationBuilder.AppParams appParams = params.getAppParams();
         Path appRoot = Paths.get(appParams.getAppRoot()).toAbsolutePath();
         String serviceTypeName = params.getServiceType().getName();
         String buildToolName = appParams.getBuildTool().getName();
+
+        // extract template to a temp directory
         Path templateDir;
         try {
             String templatePath = String.format("templates/%s/service/%s", buildToolName, serviceTypeName);
@@ -166,7 +204,12 @@ public class RumiServiceBuilder {
         catch (IOException e) {
             throw new IOException("Failed to extract template for build tool '" + buildToolName + "' and service type '" + serviceTypeName + "'", e);
         }
+
+        // generate the service skeleton
         TemplateProcessor.applyTemplate(templateDir, appRoot, params.getTokenMap());
+
+        // update the parent pom
+        updateParentPom(appRoot, params);
     }
 
     private Path extractTemplateDirectory(String templatePath) throws IOException {
