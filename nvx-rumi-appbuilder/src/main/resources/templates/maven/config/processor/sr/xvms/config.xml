@@ -1,0 +1,1 @@
+<xvm name="{{ServiceName}}-a" displayName="{{ServiceDisplayName}} a" template="{{ServiceName}}-template" enabled="${{{AppTokenName}}.local.xvm.{{ServicePackageName}}.enabled::true}"/>

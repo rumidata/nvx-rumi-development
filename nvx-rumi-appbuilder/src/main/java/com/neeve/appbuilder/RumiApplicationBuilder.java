@@ -23,7 +23,6 @@ package com.neeve.appbuilder;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.InputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.*;
@@ -31,10 +30,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import com.google.gson.Gson;
-
-import io.github.classgraph.ClassGraph;
-import io.github.classgraph.Resource;
-import io.github.classgraph.ScanResult;
 
 public class RumiApplicationBuilder {
     public enum BuildTool {
@@ -314,25 +309,6 @@ public class RumiApplicationBuilder {
         }
     }
 
-    private Path extractTemplateDirectory(String templatePath) throws IOException {
-        Path tempDir = Files.createTempDirectory("rumi-template-");
-        try (ScanResult scanResult = new ClassGraph().acceptPaths(templatePath).scan()) {
-            var resources = scanResult.getAllResources();
-            if (resources.isEmpty()) {
-                throw new InternalError("Template path not found or is empty: " + templatePath);
-            }
-            for (Resource resource : resources) {
-                String relativePath = resource.getPath().substring(templatePath.length() + 1);
-                Path targetPath = tempDir.resolve(relativePath);
-                Files.createDirectories(targetPath.getParent());
-                try (InputStream in = resource.open()) {
-                    Files.copy(in, targetPath, StandardCopyOption.REPLACE_EXISTING);
-                }
-            }
-        }
-        return tempDir;
-    }
-
     private void validateRumiAppDoesNotExist(Path appRoot) {
         if (Files.exists(appRoot)) {
             Path appConfig = appRoot.resolve(".rumi");
@@ -356,7 +332,7 @@ public class RumiApplicationBuilder {
         Path templateDir;
         try {
             String templatePath = String.format("templates/%s/app", buildTool.getName());
-            templateDir = extractTemplateDirectory(templatePath);
+            templateDir = TemplateProcessor.extractTemplateDirectory("rumi-app-template", templatePath);
         }
         catch (IOException e) {
             throw new IOException("Failed to extract template for build tool: " + buildTool, e);

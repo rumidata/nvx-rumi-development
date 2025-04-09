@@ -21,12 +21,7 @@
  */
 package com.neeve.appbuilder;
 
-import io.github.classgraph.ClassGraph;
-import io.github.classgraph.Resource;
-import io.github.classgraph.ScanResult;
-
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.*;
 import java.util.HashMap;
 import java.util.List;
@@ -180,26 +175,7 @@ public class RumiServiceBuilder {
         }
     }
 
-    private Path extractTemplateDirectory(String templatePath) throws IOException {
-        Path tempDir = Files.createTempDirectory("rumi-service-template-");
-        try (ScanResult scanResult = new ClassGraph().acceptPaths(templatePath).scan()) {
-            var resources = scanResult.getAllResources();
-            if (resources.isEmpty()) {
-                throw new InternalError("Template path not found or is empty: " + templatePath);
-            }
-            for (Resource resource : resources) {
-                String relativePath = resource.getPath().substring(templatePath.length() + 1);
-                Path targetPath = tempDir.resolve(relativePath);
-                Files.createDirectories(targetPath.getParent());
-                try (InputStream in = resource.open()) {
-                    Files.copy(in, targetPath, StandardCopyOption.REPLACE_EXISTING);
-                }
-            }
-        }
-        return tempDir;
-    }
-
-    public void createService(ServiceParams params) throws IOException {
+    public void createService(ServiceParams params) throws Exception {
         // validate
         if (params == null) {
             throw new IllegalArgumentException("params cannot be null");
@@ -218,14 +194,22 @@ public class RumiServiceBuilder {
             if (params.getServiceHAModel() != null) {
                 templatePath = templatePath + "/" + params.getServiceHAModel().getName();
             }
-            templateDir = extractTemplateDirectory(templatePath);
+            templateDir = TemplateProcessor.extractTemplateDirectory("rumi-service-template", templatePath);
         }
         catch (IOException e) {
             throw new IOException("Failed to extract template for build tool '" + buildToolName + "' and service type '" + serviceTypeName + "'", e);
         }
 
+        // prepare factory id tokens
+        List<Integer> availableIds = FactoryIdCollector.collectAvailableFactoryIds(appRoot, 2);
+        params.getTokenMap().put(TokenUtils.toToken("ServiceStateModelId"), String.valueOf(availableIds.get(0)));
+        params.getTokenMap().put(TokenUtils.toToken("ServiceMessageModelId"), String.valueOf(availableIds.get(1)));
+
         // generate the service skeleton
         TemplateProcessor.applyTemplate(templateDir, appRoot, params.getTokenMap());
+
+        // inject service config
+        ConfigInjector.injectServiceConfig(appRoot, params);
 
         // update the parent pom
         updateParentPom(appRoot, params);

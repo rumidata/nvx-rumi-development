@@ -21,12 +21,36 @@
  */
 package com.neeve.appbuilder;
 
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.Resource;
+import io.github.classgraph.ScanResult;
+
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.*;
 import java.util.*;
 
 class TemplateProcessor {
-    public static void applyTemplate(Path templateDir, Path targetDir, Map<String, String> tokens) throws IOException {
+    static Path extractTemplateDirectory(String templateDirPrefix, String templatePath) throws IOException {
+        Path tempDir = Files.createTempDirectory(templateDirPrefix + "-");
+        try (ScanResult scanResult = new ClassGraph().acceptPaths(templatePath).scan()) {
+            var resources = scanResult.getAllResources();
+            if (resources.isEmpty()) {
+                throw new InternalError("Template path not found or is empty: " + templatePath);
+            }
+            for (Resource resource : resources) {
+                String relativePath = resource.getPath().substring(templatePath.length() + 1);
+                Path targetPath = tempDir.resolve(relativePath);
+                Files.createDirectories(targetPath.getParent());
+                try (InputStream in = resource.open()) {
+                    Files.copy(in, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
+        }
+        return tempDir;
+    }
+
+    static void applyTemplate(Path templateDir, Path targetDir, Map<String, String> tokens) throws IOException {
         Files.walk(templateDir).forEach(source -> {
             try {
                 Path relative = templateDir.relativize(source);
@@ -49,7 +73,7 @@ class TemplateProcessor {
         });
     }
 
-    private static String applyTokens(String input, Map<String, String> tokens) {
+    static String applyTokens(String input, Map<String, String> tokens) {
         String result = input;
         for (Map.Entry<String, String> entry: tokens.entrySet()) {
             result = result.replace(entry.getKey(), entry.getValue());

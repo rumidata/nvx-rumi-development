@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model xmlns="http://www.neeveresearch.com/schema/x-ddl">
     <env>
-        <!-- Global Rumi runtime configuration -->
         <nv>
             <stats>
                 <memory>
@@ -30,8 +29,6 @@
                 </latency>
             </stats>
         </nv>
-
-        <!-- Global {{AppDisplayName}} runtime configuration -->
         <{{AppTokenName}}>
         </{{AppTokenName}}>
     </env>
@@ -42,13 +39,11 @@
 
     <apps>
         <templates>
-            <!-- service templates -->
         </templates>
     </apps>
 
     <xvms>
         <templates>
-            <!-- container templates -->
         </templates>
     </xvms>
 
@@ -62,7 +57,7 @@
             <env>
                 <ROOT_DIR>${{{AppTokenName}}.rootdir::/home/rumi/{{AppTokenName}}}</ROOT_DIR>
                 <SYSTEM_BUS_DESCRIPTOR>{{MessagingConnectionString}}</SYSTEM_BUS_DESCRIPTOR>
-                <TLOG_LOCATION>${ROOT_DIR}/tlog/${nv.ddl.targetxvm}</TLOG_LOCATION>
+                <STORE_LOCATION>${ROOT_DIR}/store/${nv.ddl.targetxvm}</STORE_LOCATION>
                 <nv>
                     <!-- discovery -->
                     <discovery.descriptor>activemq://discovery.rumi.local:61616?wireFormat.maxInactivityDuration=0</discovery.descriptor>

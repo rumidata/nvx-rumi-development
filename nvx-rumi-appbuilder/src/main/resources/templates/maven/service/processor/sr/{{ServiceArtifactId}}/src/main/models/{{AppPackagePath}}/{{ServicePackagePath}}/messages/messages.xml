@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
-<model xmlns="http://www.neeveresearch.com/schema/x-adml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" namespace="{{AppPackageName}}.{{ServicePackageName}}.messages" defaultFactoryId="11">
+<model xmlns="http://www.neeveresearch.com/schema/x-adml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" namespace="{{AppPackageName}}.{{ServicePackageName}}.messages" defaultFactoryId="{{ServiceMessageModelId}}">
     <import model="{{AppPackagePath}}/roe/messages.xml"/>
 
     <factories>
-        <factory name="MessageFactory" id="11"/>
+        <factory name="MessageFactory" id="{{ServiceMessageModelId}}"/>
     </factories>
     
     <enumerations>
