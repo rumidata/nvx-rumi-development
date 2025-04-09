@@ -32,21 +32,17 @@
         <{{AppTokenName}}>
         </{{AppTokenName}}>
     </env>
-
     <buses>
-        <bus name="{{BusName}}" descriptor="${SYSTEM_BUS_DESCRIPTOR}"/>
+        <bus name="{{BusName}}" descriptor="${APP_BUS_DESCRIPTOR}"/>
     </buses>
-
     <apps>
         <templates>
         </templates>
     </apps>
-
     <xvms>
         <templates>
         </templates>
     </xvms>
-
     <profiles>
         <profile name="cloud">
             <activation>
@@ -56,7 +52,7 @@
             </activation>
             <env>
                 <ROOT_DIR>${{{AppTokenName}}.rootdir::/home/rumi/{{AppTokenName}}}</ROOT_DIR>
-                <SYSTEM_BUS_DESCRIPTOR>{{MessagingConnectionString}}</SYSTEM_BUS_DESCRIPTOR>
+                <APP_BUS_DESCRIPTOR>{{MessagingConnectionString}}</APP_BUS_DESCRIPTOR>
                 <STORE_LOCATION>${ROOT_DIR}/store/${nv.ddl.targetxvm}</STORE_LOCATION>
                 <nv>
                     <!-- discovery -->
@@ -66,12 +62,10 @@
                 <{{AppTokenName}}>
                 </{{AppTokenName}}>
             </env>
-
             <apps>
                 <templates>
                 </templates>
             </apps>
-
             <xvms>
                 <templates>
                 </templates>

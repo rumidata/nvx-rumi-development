@@ -71,6 +71,7 @@ class ConfigInjector {
         transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
         transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
         transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+        transformer.setOutputProperty(OutputKeys.STANDALONE, "yes");
         DOMSource source = new DOMSource(doc);
         StreamResult result = new StreamResult(new OutputStreamWriter(new FileOutputStream(configPath.toFile()), "UTF-8"));
         transformer.transform(source, result);
