@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 
 import com.google.gson.Gson;
 
-public class RumiApplicationBuilder {
+public class ApplicationBuilder {
     public enum BuildTool {
         MAVEN("maven"),
         GRADLE("gradle");
@@ -248,7 +248,7 @@ public class RumiApplicationBuilder {
                 throw new IllegalArgumentException(appRoot.toAbsolutePath().normalize() + " is not a valid Rumi application root");
             }
             try (BufferedReader reader = Files.newBufferedReader(configFile)) {
-                return gson.fromJson(reader, RumiApplicationBuilder.AppParams.class);
+                return gson.fromJson(reader, ApplicationBuilder.AppParams.class);
             }
         }
 
@@ -321,7 +321,7 @@ public class RumiApplicationBuilder {
         }
     }
 
-    final public void createApplication(AppParams params) throws IOException {
+    final public ApplicationBuilder createApplication(AppParams params) throws IOException {
         if (params == null) {
             throw new IllegalArgumentException("params cannot be null");
         }
@@ -339,5 +339,10 @@ public class RumiApplicationBuilder {
         }
         TemplateProcessor.applyTemplate(templateDir, appDir, params.getTokenMap());
         AppParams.write(appRoot, params);
+        return this;
+    }
+
+    final public ServiceBuilder newServiceBuilder() {
+        return new ServiceBuilder();
     }
 }

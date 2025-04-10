@@ -1,10 +1,5 @@
 <xvm name="{{ServiceName}}-template">
     <env>
-        <nv>
-            <file>
-                <usenative>false</usenative>
-            </file>
-        </nv>
         <{{AppTokenName}}.{{ServicePackageName}}>
         </{{AppTokenName}}.{{ServicePackageName}}>
     </env>

@@ -1,0 +1,13 @@
+<app name="{{ServiceName}}-template" mainClass="{{AppPackageName}}.{{ServicePackageName}}.Main">
+    <messaging>
+        <factories>
+            <factory name="{{AppPackageName}}.roe.MessageFactory"/>
+        </factories>
+        <bus name="{{BusName}}"/>
+    </messaging>
+    <storage enabled="false"/>
+    <captureMessageTypeStats>${SERVICE_CAPTURE_MESSAGE_TYPE_STATS::true}</captureMessageTypeStats>
+    <messageTypeStatsLatenciesToCapture>${SERVICE_CAPTURE_MESSAGE_TYPE_STATS_LATENCIES::mproc}</messageTypeStatsLatenciesToCapture>
+    <performDuplicateChecking>${SERVICE_PERFORM_DUP_CHECKING::true}</performDuplicateChecking>
+</app>
+

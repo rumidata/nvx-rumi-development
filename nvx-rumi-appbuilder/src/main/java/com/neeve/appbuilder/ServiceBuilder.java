@@ -27,20 +27,26 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class RumiServiceBuilder {
+public class ServiceBuilder {
     public enum ServiceType {
-        DRIVER("driver"),
-        CONNECTOR("connector"),
-        PROCESSOR("processor");
+        DRIVER("driver", false),
+        CONNECTOR("connector", false),
+        PROCESSOR("processor", true);
 
         private final String name;
+        private final boolean clusterable;
 
-        ServiceType(String name) {
+        ServiceType(String name, boolean clusterable) {
             this.name = name;
+            this.clusterable = clusterable;
         }
 
         public String getName() {
             return name;
+        }
+
+        public boolean isClusterable() {
+            return clusterable;
         }
 
         public static ServiceType fromString(String value) {
@@ -78,29 +84,41 @@ public class RumiServiceBuilder {
     }
 
     public static class ServiceParams {
-        private final RumiApplicationBuilder.AppParams appParams;
+        private final ApplicationBuilder.AppParams appParams;
         private final String serviceName;
         private final ServiceType serviceType;
         private final ServiceHAModel serviceHAModel;
+        private final boolean clustered;
+        private final int numPartitions;
         private final Map<String, String> tokenMap;
 
         public ServiceParams(String appRoot,
                              String serviceName,
                              ServiceType serviceType,
-                             ServiceHAModel serviceHAModel) throws IOException {
+                             ServiceHAModel serviceHAModel,
+                             boolean clustered,
+                             int numPartitions) throws IOException {
             if (appRoot == null || appRoot.isEmpty()) {
-                throw new IllegalArgumentException("App root cannot be null or empty");
+                throw new IllegalArgumentException("app root cannot be null or empty");
             }
             if (serviceName == null || serviceName.isEmpty()) {
-                throw new IllegalArgumentException("Service name cannot be null or empty");
+                throw new IllegalArgumentException("service name cannot be null or empty");
             }
-            this.appParams = RumiApplicationBuilder.AppParams.read(Paths.get(appRoot));
+            if (numPartitions <= 0) {
+                throw new IllegalArgumentException("num partitions cannot be negative");
+            }
+            this.appParams = ApplicationBuilder.AppParams.read(Paths.get(appRoot));
             this.serviceName = serviceName;
             this.serviceType = serviceType != null ? serviceType : ServiceType.PROCESSOR;
             this.serviceHAModel = serviceHAModel;
-            if (this.serviceType == ServiceType.PROCESSOR && this.serviceHAModel == null) {
+            if (this.serviceType.isClusterable() && this.serviceHAModel == null) {
                 throw new IllegalArgumentException("service HA model must be specified for the '" + this.serviceType.getName() + "' service type.");
             }
+            this.clustered = clustered;
+            if (!this.serviceType.isClusterable() && this.clustered) {
+                throw new IllegalArgumentException("the '" + this.serviceType.getName() + "' service type is not clusterable.");
+            }
+            this.numPartitions = numPartitions;
             this.tokenMap = toTokenMap();
         }
 
@@ -126,7 +144,7 @@ public class RumiServiceBuilder {
             return serviceName;
         }
 
-        public RumiApplicationBuilder.AppParams getAppParams() {
+        public ApplicationBuilder.AppParams getAppParams() {
             return appParams;
         }
 
@@ -136,6 +154,14 @@ public class RumiServiceBuilder {
 
         public ServiceHAModel getServiceHAModel() {
             return serviceHAModel;
+        }
+
+        public boolean isClustered() {
+            return clustered;
+        }
+
+        public int getNumPartitions() {
+            return numPartitions;
         }
 
         public Map<String, String> getTokenMap() {
@@ -175,14 +201,14 @@ public class RumiServiceBuilder {
         }
     }
 
-    public void createService(ServiceParams params) throws Exception {
+    public ServiceBuilder createService(ServiceParams params) throws Exception {
         // validate
         if (params == null) {
             throw new IllegalArgumentException("params cannot be null");
         }
 
         // get params
-        RumiApplicationBuilder.AppParams appParams = params.getAppParams();
+        ApplicationBuilder.AppParams appParams = params.getAppParams();
         Path appRoot = Paths.get(appParams.getAppRoot()).toAbsolutePath();
         String serviceTypeName = params.getServiceType().getName();
         String buildToolName = appParams.getBuildTool().getName();
@@ -213,6 +239,9 @@ public class RumiServiceBuilder {
 
         // update the parent pom
         updateParentPom(appRoot, params);
+
+        // done
+        return this;
     }
 }
 
